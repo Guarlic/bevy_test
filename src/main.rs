@@ -2,8 +2,11 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::collide;
 use bevy::window::WindowTheme;
+use rand::Rng;
 use std::thread::sleep;
 use std::time::Duration;
+
+static mut SCORE: i32 = 0;
 
 fn main() {
     App::new()
@@ -17,10 +20,19 @@ fn main() {
             }),
             ..default()
         }))
-        .add_systems(Startup, (setup_camera, setup_player, setup_timer))
+        .add_systems(
+            Startup,
+            (setup_camera, setup_score, setup_player, setup_timer),
+        )
         .add_systems(
             Update,
-            (player_move, update_enemy, enemy_move, game_over_collision),
+            (
+                player_move,
+                update_enemy,
+                update_score,
+                enemy_move,
+                game_over_collision,
+            ),
         )
         .run();
 }
@@ -35,6 +47,9 @@ struct Enemy;
 struct TimerStruct(Timer);
 
 #[derive(Component)]
+struct ScoreText;
+
+#[derive(Component)]
 enum Direction {
     Up,
     Down,
@@ -44,6 +59,24 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
     sleep(Duration::from_secs(1));
+
+    println!("[Bevy Test] Game start");
+}
+
+fn setup_score(mut commands: Commands, asset: Res<AssetServer>) {
+    unsafe {
+        commands.spawn((
+            TextBundle::from_section(
+                format!("Score: {}", SCORE),
+                TextStyle {
+                    font: asset.load("font.ttf"),
+                    font_size: 50.,
+                    ..default()
+                },
+            ),
+            ScoreText,
+        ));
+    }
 }
 
 fn setup_player(mut commands: Commands) {
@@ -102,11 +135,16 @@ fn update_enemy(
             for player_transform in player_query.iter() {
                 let player_x = player_transform.translation.x;
 
+                let mut random = rand::thread_rng();
+
+                let enemy_size_x = random.gen_range(30..100) as f32;
+                let enemy_size_y = random.gen_range(30..100) as f32;
+
                 commands.spawn((
                     SpriteBundle {
                         sprite: Sprite {
-                            custom_size: Some(Vec2::new(100., 30.)),
-                            color: Color::rgb(255., 255., 0.),
+                            custom_size: Some(Vec2::new(enemy_size_x, enemy_size_y)),
+                            color: Color::rgb(0.6, 0.8, 0.8).into(),
                             ..default()
                         },
                         transform: Transform::from_xyz(player_x, 150., 0.),
@@ -115,7 +153,33 @@ fn update_enemy(
                     Direction::Down,
                     Enemy,
                 ));
+
+                println!(
+                    "[Bevy Test] Spawned enemy; size: {} x {}",
+                    enemy_size_x, enemy_size_y
+                );
+
+                unsafe {
+                    SCORE += 1;
+                }
+
+                unsafe {
+                    println!("[Bevy Test] Score: +1! ({})", SCORE);
+                }
+
+                let timer_duration = random.gen_range(3..5);
+
+                timer.0.set_duration(Duration::from_secs(timer_duration));
+                timer.0.reset();
             }
+        }
+    }
+}
+
+fn update_score(mut text_query: Query<&mut Text, With<ScoreText>>) {
+    for mut text in text_query.iter_mut() {
+        unsafe {
+            text.sections[0].value = format!("Score: {}", SCORE);
         }
     }
 }
@@ -156,6 +220,10 @@ fn game_over_collision(
             );
 
             if let Some(_) = collision {
+                unsafe {
+                    println!("[Bevy Test] Game over; score: {}", SCORE);
+                }
+
                 sleep(Duration::from_secs(1));
 
                 exit_events.send(AppExit);
