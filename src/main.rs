@@ -137,8 +137,14 @@ fn update_enemy(
 
                 let mut random = rand::thread_rng();
 
-                let enemy_size_x = random.gen_range(30..100) as f32;
-                let enemy_size_y = random.gen_range(30..100) as f32;
+                let enemy_size_x = random.gen_range(30..=100) as f32;
+                let enemy_size_y = random.gen_range(30..=100) as f32;
+
+                let enemy_direction_temp = random.gen_range(1..=2);
+                let enemy_direction = match enemy_direction_temp {
+                    1 => Direction::Up,
+                    _ => Direction::Down,
+                };
 
                 commands.spawn((
                     SpriteBundle {
@@ -150,7 +156,7 @@ fn update_enemy(
                         transform: Transform::from_xyz(player_x, 150., 0.),
                         ..default()
                     },
-                    Direction::Down,
+                    enemy_direction,
                     Enemy,
                 ));
 
@@ -161,9 +167,7 @@ fn update_enemy(
 
                 unsafe {
                     SCORE += 1;
-                }
 
-                unsafe {
                     println!("[Bevy Test] Score: +1! ({})", SCORE);
                 }
 
@@ -224,7 +228,7 @@ fn game_over_collision(
                     println!("[Bevy Test] Game over; score: {}", SCORE);
                 }
 
-                sleep(Duration::from_secs(1));
+                sleep(Duration::from_millis(1500));
 
                 exit_events.send(AppExit);
             }
