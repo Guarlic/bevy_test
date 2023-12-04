@@ -22,13 +22,20 @@ fn main() {
         }))
         .add_systems(
             Startup,
-            (setup_camera, setup_score, setup_player, setup_timer),
+            (
+                setup_camera,
+                setup_score,
+                setup_player,
+                setup_enemy_timer,
+                setup_laser_timer,
+            ),
         )
         .add_systems(
             Update,
             (
                 player_move,
                 update_enemy,
+                update_laser,
                 update_score,
                 enemy_move,
                 game_over_collision,
@@ -44,7 +51,16 @@ struct Player;
 struct Enemy;
 
 #[derive(Component)]
+struct Laser;
+
+#[derive(Component)]
 struct TimerStruct(Timer);
+
+#[derive(Component)]
+struct EnemyTimer;
+
+#[derive(Component)]
+struct LaserTimer;
 
 #[derive(Component)]
 struct ScoreText;
@@ -93,8 +109,18 @@ fn setup_player(mut commands: Commands) {
     ));
 }
 
-fn setup_timer(mut commands: Commands) {
-    commands.spawn(TimerStruct(Timer::from_seconds(5., TimerMode::Repeating)));
+fn setup_enemy_timer(mut commands: Commands) {
+    commands.spawn((
+        TimerStruct(Timer::from_seconds(5., TimerMode::Repeating)),
+        EnemyTimer,
+    ));
+}
+
+fn setup_laser_timer(mut commands: Commands) {
+    commands.spawn((
+        TimerStruct(Timer::from_seconds(25., TimerMode::Repeating)),
+        LaserTimer,
+    ));
 }
 
 fn player_move(
@@ -126,7 +152,7 @@ fn player_move(
 
 fn update_enemy(
     time: Res<Time>,
-    mut timer_query: Query<&mut TimerStruct>,
+    mut timer_query: Query<&mut TimerStruct, With<EnemyTimer>>,
     player_query: Query<&Transform, With<Player>>,
     mut commands: Commands,
 ) {
@@ -180,6 +206,50 @@ fn update_enemy(
     }
 }
 
+fn update_laser(
+    time: Res<Time>,
+    mut timer_query: Query<&mut TimerStruct, With<LaserTimer>>,
+    player_query: Query<&Transform, With<Player>>,
+    laser_query: Query<Entity, With<Laser>>,
+    mut commands: Commands,
+) {
+    for mut timer in timer_query.iter_mut() {
+        if timer.0.tick(time.delta()).just_finished() {
+            for player_transform in player_query.iter() {
+                for laser in laser_query.iter() {
+                    commands.entity(laser).despawn();
+                }
+
+                let player_y = player_transform.translation.y;
+
+                let mut random = rand::thread_rng();
+
+                let laser_plus_minus = random.gen_range(1..=2);
+
+                let laser_y = match laser_plus_minus {
+                    1 => player_y + 50.,
+                    _ => player_y - 50.,
+                };
+
+                commands.spawn((
+                    SpriteBundle {
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::new(950., 20.)),
+                            color: Color::rgb(0.9, 0.6, 0.6).into(),
+                            ..default()
+                        },
+                        transform: Transform::from_xyz(0., laser_y, 0.),
+                        ..default()
+                    },
+                    Laser,
+                ));
+
+                println!("[Bevy Test] Spawned laser!");
+            }
+        }
+    }
+}
+
 fn update_score(mut text_query: Query<&mut Text, With<ScoreText>>) {
     for mut text in text_query.iter_mut() {
         unsafe {
@@ -213,6 +283,7 @@ fn game_over_collision(
     mut exit_events: ResMut<Events<AppExit>>,
     player_query: Query<(&Transform, &Sprite), With<Player>>,
     enemy_query: Query<(&Transform, &Sprite), With<Enemy>>,
+    laser_query: Query<(&Transform, &Sprite), With<Laser>>,
 ) {
     for (player_transform, player_sprite) in player_query.iter() {
         for (enemy_transform, enemy_sprite) in enemy_query.iter() {
@@ -221,6 +292,25 @@ fn game_over_collision(
                 player_sprite.custom_size.unwrap(),
                 enemy_transform.translation,
                 enemy_sprite.custom_size.unwrap(),
+            );
+
+            if let Some(_) = collision {
+                unsafe {
+                    println!("[Bevy Test] Game over; score: {}", SCORE);
+                }
+
+                sleep(Duration::from_millis(1500));
+
+                exit_events.send(AppExit);
+            }
+        }
+
+        for (laser_transform, laser_sprite) in laser_query.iter() {
+            let collision = collide(
+                player_transform.translation,
+                player_sprite.custom_size.unwrap(),
+                laser_transform.translation,
+                laser_sprite.custom_size.unwrap(),
             );
 
             if let Some(_) = collision {
