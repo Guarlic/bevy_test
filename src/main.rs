@@ -209,17 +209,17 @@ fn update_enemy(
 fn update_laser(
     time: Res<Time>,
     mut timer_query: Query<&mut TimerStruct, With<LaserTimer>>,
-    player_query: Query<&Transform, With<Player>>,
     laser_query: Query<Entity, With<Laser>>,
+    player_query: Query<&Transform, With<Player>>,
     mut commands: Commands,
 ) {
     for mut timer in timer_query.iter_mut() {
         if timer.0.tick(time.delta()).just_finished() {
-            for player_transform in player_query.iter() {
-                for laser in laser_query.iter() {
-                    commands.entity(laser).despawn();
-                }
+            for laser in laser_query.iter() {
+                commands.entity(laser).despawn();
+            }
 
+            for player_transform in player_query.iter() {
                 let player_y = player_transform.translation.y;
 
                 let mut random = rand::thread_rng();
@@ -234,7 +234,7 @@ fn update_laser(
                 commands.spawn((
                     SpriteBundle {
                         sprite: Sprite {
-                            custom_size: Some(Vec2::new(950., 20.)),
+                            custom_size: Some(Vec2::new(1000., 20.)),
                             color: Color::rgb(0.9, 0.6, 0.6).into(),
                             ..default()
                         },
@@ -245,6 +245,12 @@ fn update_laser(
                 ));
 
                 println!("[Bevy Test] Spawned laser!");
+
+                unsafe {
+                    SCORE += 2;
+
+                    println!("[Bevy Test] Score: +2! ({})", SCORE);
+                }
             }
         }
     }
