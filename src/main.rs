@@ -80,19 +80,17 @@ fn setup_camera(mut commands: Commands) {
 }
 
 fn setup_score(mut commands: Commands, asset: Res<AssetServer>) {
-    unsafe {
-        commands.spawn((
-            TextBundle::from_section(
-                format!("Score: {}", SCORE),
-                TextStyle {
-                    font: asset.load("font.ttf"),
-                    font_size: 50.,
-                    ..default()
-                },
-            ),
-            ScoreText,
-        ));
-    }
+    commands.spawn((
+        TextBundle::from_section(
+            format!("Score: 0"),
+            TextStyle {
+                font: asset.load("font.ttf"),
+                font_size: 50.,
+                ..default()
+            },
+        ),
+        ScoreText,
+    ));
 }
 
 fn setup_player(mut commands: Commands) {
