@@ -12,7 +12,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Bevy Test".into(),
+                title: "Avoid".into(),
                 resolution: (1000., 700.).into(),
                 window_theme: Some(WindowTheme::Dark),
                 resizable: false,
@@ -26,7 +26,7 @@ fn main() {
                 setup_camera,
                 setup_score,
                 setup_player,
-                setup_enemy_timer,
+                setup_block_timer,
                 setup_laser_timer,
             ),
         )
@@ -34,10 +34,10 @@ fn main() {
             Update,
             (
                 player_move,
-                update_enemy,
+                update_block,
                 update_laser,
                 update_score,
-                enemy_move,
+                block_move,
                 game_over_collision,
             ),
         )
@@ -51,13 +51,16 @@ struct Player;
 struct Enemy;
 
 #[derive(Component)]
+struct Block;
+
+#[derive(Component)]
 struct Laser;
 
 #[derive(Component)]
 struct TimerStruct(Timer);
 
 #[derive(Component)]
-struct EnemyTimer;
+struct BlockTimer;
 
 #[derive(Component)]
 struct LaserTimer;
@@ -107,10 +110,10 @@ fn setup_player(mut commands: Commands) {
     ));
 }
 
-fn setup_enemy_timer(mut commands: Commands) {
+fn setup_block_timer(mut commands: Commands) {
     commands.spawn((
         TimerStruct(Timer::from_seconds(5., TimerMode::Repeating)),
-        EnemyTimer,
+        BlockTimer,
     ));
 }
 
@@ -148,9 +151,9 @@ fn player_move(
     }
 }
 
-fn update_enemy(
+fn update_block(
     time: Res<Time>,
-    mut timer_query: Query<&mut TimerStruct, With<EnemyTimer>>,
+    mut timer_query: Query<&mut TimerStruct, With<BlockTimer>>,
     player_query: Query<&Transform, With<Player>>,
     mut commands: Commands,
 ) {
@@ -182,10 +185,11 @@ fn update_enemy(
                     },
                     enemy_direction,
                     Enemy,
+                    Block,
                 ));
 
                 println!(
-                    "[Bevy Test] Spawned enemy; size: {} x {}",
+                    "[Bevy Test] Spawned block; size: {} x {}",
                     enemy_size_x, enemy_size_y
                 );
 
@@ -239,6 +243,7 @@ fn update_laser(
                         transform: Transform::from_xyz(0., laser_y, 0.),
                         ..default()
                     },
+                    Enemy,
                     Laser,
                 ));
 
@@ -262,9 +267,9 @@ fn update_score(mut text_query: Query<&mut Text, With<ScoreText>>) {
     }
 }
 
-fn enemy_move(
+fn block_move(
     time: Res<Time>,
-    mut enemy_query: Query<(&mut Direction, &mut Transform), With<Enemy>>,
+    mut enemy_query: Query<(&mut Direction, &mut Transform), With<Block>>,
 ) {
     for (mut enemy_direction, mut enemy_transform) in enemy_query.iter_mut() {
         const ENEMY_SPEED: f32 = 80.;
@@ -287,7 +292,6 @@ fn game_over_collision(
     mut exit_events: ResMut<Events<AppExit>>,
     player_query: Query<(&Transform, &Sprite), With<Player>>,
     enemy_query: Query<(&Transform, &Sprite), With<Enemy>>,
-    laser_query: Query<(&Transform, &Sprite), With<Laser>>,
 ) {
     for (player_transform, player_sprite) in player_query.iter() {
         for (enemy_transform, enemy_sprite) in enemy_query.iter() {
@@ -296,25 +300,6 @@ fn game_over_collision(
                 player_sprite.custom_size.unwrap(),
                 enemy_transform.translation,
                 enemy_sprite.custom_size.unwrap(),
-            );
-
-            if let Some(_) = collision {
-                unsafe {
-                    println!("[Bevy Test] Game over; score: {}", SCORE);
-                }
-
-                sleep(Duration::from_millis(1500));
-
-                exit_events.send(AppExit);
-            }
-        }
-
-        for (laser_transform, laser_sprite) in laser_query.iter() {
-            let collision = collide(
-                player_transform.translation,
-                player_sprite.custom_size.unwrap(),
-                laser_transform.translation,
-                laser_sprite.custom_size.unwrap(),
             );
 
             if let Some(_) = collision {
