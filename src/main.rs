@@ -9,6 +9,23 @@ use std::time::Duration;
 static mut SCORE: i32 = 0;
 
 fn main() {
+    let setup_systems = (
+        setup_camera,
+        setup_score,
+        setup_player,
+        setup_block_timer,
+        setup_laser_timer,
+    );
+
+    let update_systems = (
+        player_move,
+        update_block,
+        update_laser,
+        update_score,
+        block_move,
+        game_over_collision,
+    );
+
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
@@ -20,27 +37,8 @@ fn main() {
             }),
             ..default()
         }))
-        .add_systems(
-            Startup,
-            (
-                setup_camera,
-                setup_score,
-                setup_player,
-                setup_block_timer,
-                setup_laser_timer,
-            ),
-        )
-        .add_systems(
-            Update,
-            (
-                player_move,
-                update_block,
-                update_laser,
-                update_score,
-                block_move,
-                game_over_collision,
-            ),
-        )
+        .add_systems(Startup, setup_systems)
+        .add_systems(Update, update_systems)
         .run();
 }
 
