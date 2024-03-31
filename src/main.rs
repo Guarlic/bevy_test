@@ -42,6 +42,7 @@ fn main() {
         .run();
 }
 
+// Components
 #[derive(Component)]
 struct Player;
 
@@ -72,6 +73,7 @@ enum Direction {
     Down,
 }
 
+// Setup systems
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
@@ -122,6 +124,7 @@ fn setup_laser_timer(mut commands: Commands) {
     ));
 }
 
+// Update systems
 fn player_move(
     keys: Res<Input<KeyCode>>,
     time: Res<Time>,
