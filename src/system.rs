@@ -15,17 +15,16 @@ pub fn setup_camera(mut commands: Commands) {
 }
 
 pub fn setup_score(mut commands: Commands, asset: Res<AssetServer>) {
-    commands.spawn((
-        TextBundle::from_section(
-            format!("Score: 0"),
-            TextStyle {
-                font: asset.load("font.ttf"),
-                font_size: 50.,
-                ..default()
-            },
-        ),
-        ScoreText,
-    ));
+    let score = TextBundle::from_section(
+        "Score: 0".to_string(),
+        TextStyle {
+            font: asset.load("font.ttf"),
+            font_size: 50.,
+            ..default()
+        },
+    );
+
+    commands.spawn((score, ScoreText));
 }
 
 pub fn update_game_over(
