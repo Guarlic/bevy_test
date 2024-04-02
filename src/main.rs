@@ -39,33 +39,3 @@ fn main() {
         ))
         .run();
 }
-
-// #[derive(Component)]
-// struct Player;
-//
-// #[derive(Component)]
-// struct Enemy;
-//
-// #[derive(Component)]
-// struct Block;
-//
-// #[derive(Component)]
-// struct Laser;
-//
-// #[derive(Component)]
-// struct TimerStruct(Timer);
-//
-// #[derive(Component)]
-// struct BlockTimer;
-//
-// #[derive(Component)]
-// struct LaserTimer;
-//
-// #[derive(Component)]
-// struct ScoreText;
-//
-// #[derive(Component)]
-// enum Direction {
-//     Up,
-//     Down,
-// }
